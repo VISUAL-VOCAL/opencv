@@ -219,7 +219,7 @@ class Builder:
             BUILD_PERF_TESTS="OFF",
             BUILD_DOCS="OFF",
             BUILD_ANDROID_EXAMPLES=("OFF" if self.no_samples_build else "ON"),
-            INSTALL_ANDROID_EXAMPLES="ON",
+            INSTALL_ANDROID_EXAMPLES="OFF",
         )
         if self.ninja_path != 'ninja':
             cmake_vars['CMAKE_MAKE_PROGRAM'] = self.ninja_path
@@ -232,6 +232,13 @@ class Builder:
 
         if self.config.extra_modules_path is not None:
             cmd.append("-DOPENCV_EXTRA_MODULES_PATH='%s'" % self.config.extra_modules_path)
+
+        if self.config.only is not None:
+            cmd.append("-DBUILD_LIST='%s'" % self.config.only)
+            # cmd.append("-DBUILD_ANDROID_PROJECTS='OFF'")
+            cmd.append("-DBUILD_ANDROID_EXAMPLES='OFF'")
+            cmd.append("-DBUILD_PERF_TESTS='OFF'")
+            cmd.append("-DBUILD_TESTS='OFF'")
 
         if self.use_ccache == True:
             cmd.append("-DNDK_CCACHE=ccache")
@@ -328,6 +335,8 @@ if __name__ == "__main__":
     parser.add_argument('--debug', action="store_true", help="Build 'Debug' binaries (CMAKE_BUILD_TYPE=Debug)")
     parser.add_argument('--debug_info', action="store_true", help="Build with debug information (useful for Release mode: BUILD_WITH_DEBUG_INFO=ON)")
     parser.add_argument('--no_samples_build', action="store_true", help="Do not build samples (speeds up build)")
+    parser.add_argument('--only', default=None, help="Build only this comma separated list of modules (default: build all)")
+    parser.add_argument('--abis', default=None, help="Build only this comma separated list of Android ABIs (default: all available)")
     args = parser.parse_args()
 
     log.basicConfig(format='%(message)s', level=log.DEBUG)
@@ -388,16 +397,19 @@ if __name__ == "__main__":
 
     log.info("Detected OpenCV version: %s", builder.opencv_version)
 
+    args_abis_array = args.abis.split(',')
+    do_install = True
     for i, abi in enumerate(ABIs):
-        do_install = (i == 0)
+        if args.abis is None or abi.name in args_abis_array:
 
-        log.info("=====")
-        log.info("===== Building library for %s", abi)
-        log.info("=====")
+            log.info("=====")
+            log.info("===== Building library for %s", abi)
+            log.info("=====")
 
-        os.chdir(builder.libdest)
-        builder.clean_library_build_dir()
-        builder.build_library(abi, do_install)
+            os.chdir(builder.libdest)
+            builder.clean_library_build_dir()
+            builder.build_library(abi, do_install)
+            do_install = False
 
     builder.gather_results()
 
