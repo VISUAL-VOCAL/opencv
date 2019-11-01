@@ -49,7 +49,7 @@ def getXCodeMajor():
         raise Exception("Failed to parse Xcode version")
 
 class Builder:
-    def __init__(self, opencv, contrib, dynamic, bitcodedisabled, exclude, only, enablenonfree, targets, debug, debug_info):
+    def __init__(self, opencv, contrib, dynamic, bitcodedisabled, exclude, disable, only, enablenonfree, targets, debug, debug_info):
         self.opencv = os.path.abspath(opencv)
         self.contrib = None
         if contrib:
@@ -61,6 +61,7 @@ class Builder:
         self.dynamic = dynamic
         self.bitcodedisabled = bitcodedisabled
         self.exclude = exclude
+        self.disable = disable
         self.only = only
         self.enablenonfree = enablenonfree
         self.targets = targets
@@ -154,6 +155,9 @@ class Builder:
         if len(self.exclude) > 0:
             args += ["-DBUILD_opencv_world=OFF"] if not self.dynamic else []
             args += ["-DBUILD_opencv_%s=OFF" % m for m in self.exclude]
+
+        if len(self.disable) > 0:
+            args += ["-DWITH_%s=OFF" % f for f in self.disable]
 
         if len(self.only) > 0:
             args += ["-DBUILD_LIST=%s" % self.only]
@@ -295,6 +299,7 @@ if __name__ == "__main__":
     parser.add_argument('--opencv', metavar='DIR', default=folder, help='folder with opencv repository (default is "../.." relative to script location)')
     parser.add_argument('--contrib', metavar='DIR', default=None, help='folder with opencv_contrib repository (default is "None" - build only main framework)')
     parser.add_argument('--without', metavar='MODULE', default=[], action='append', help='OpenCV modules to exclude from the framework')
+    parser.add_argument('--disable', metavar='FEATURE', default=[], action='append', help='OpenCV features to disable (add WITH_*=OFF)')
     parser.add_argument('--only', metavar='MODULE1[,MODULE2[,...]]', default=None, help='Build only this comma separated list of modules')
     parser.add_argument('--dynamic', default=False, action='store_true', help='build dynamic framework (default is "False" - builds static framework)')
     parser.add_argument('--disable-bitcode', default=False, dest='bitcodedisabled', action='store_true', help='disable bitcode (enabled by default)')
@@ -313,7 +318,7 @@ if __name__ == "__main__":
     iphonesimulator_archs = args.iphonesimulator_archs.split(',')
     print('Using iPhoneSimulator ARCHS=' + str(iphonesimulator_archs))
 
-    b = iOSBuilder(args.opencv, args.contrib, args.dynamic, args.bitcodedisabled, args.without, args.only, args.enablenonfree,
+    b = iOSBuilder(args.opencv, args.contrib, args.dynamic, args.bitcodedisabled, args.without, args.disable, args.only, args.enablenonfree,
         [
             (iphoneos_archs, "iPhoneOS"),
         ] if os.environ.get('BUILD_PRECOMMIT', None) else
