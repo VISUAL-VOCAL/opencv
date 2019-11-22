@@ -324,6 +324,6 @@ if __name__ == "__main__":
         ] if os.environ.get('BUILD_PRECOMMIT', None) else
         [
             (iphoneos_archs, "iPhoneOS"),
-            (iphonesimulator_archs, "iPhoneSimulator"),
+#            (iphonesimulator_archs, "iPhoneSimulator"),
         ], args.debug, args.debug_info)
     b.build(args.out)
